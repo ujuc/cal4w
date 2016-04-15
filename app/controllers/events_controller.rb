@@ -1,21 +1,17 @@
 # frozen_string_literal: true
 # EventsController
 class EventsController < ApplicationController
-  before_action :set_event, only: [
-    :show, :edit, :join, :unjoin, :update, :destroy, :copy
-  ]
+  before_action :set_event, except: [:index, :new, :create]
   before_action :permission_check, only: [:edit, :update, :destroy, :copy]
 
-  respond_to :html, :json
+  respond_to :html
 
   def index
-    @events = Event.all
-    respond_with(@events)
+    @events = Event.with_user
   end
 
   def show
     @user = current_user
-    respond_with(@event)
   end
 
   def join
@@ -63,6 +59,7 @@ class EventsController < ApplicationController
 
   def destroy
     @event.destroy
+    @event.notify_destroyed_event unless @event.persisted? # destroyed
     respond_with(@event)
   end
 
@@ -80,5 +77,9 @@ class EventsController < ApplicationController
 
   def permission_check
     raise User::NoPermission unless @event.editable? current_user
+  end
+
+  rescue_from ActiveRecord::RecordNotFound do
+    redirect_to root_path, notice: "해당하는 이벤트를 찾을 수 없습니다."
   end
 end

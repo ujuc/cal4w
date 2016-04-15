@@ -13,6 +13,8 @@ class Event < ActiveRecord::Base
   validates :place, presence: true
   validates :user_id, presence: true
 
+  scope :with_user, -> { includes(:user) }
+
   def editable?(user)
     user.id == user_id
   end
@@ -60,6 +62,13 @@ class Event < ActiveRecord::Base
     SlackWrapper.notify(
       '#_meetup',
       "밋업 일정이 변경되었습니다.\n#{to_slack_message}\n링크: #{target_url}"
+    )
+  end
+
+  def notify_destroyed_event
+    SlackWrapper.notify(
+      '#_meetup',
+      "밋업 일정이 취소되었습니다.\n#{to_slack_message}"
     )
   end
 
